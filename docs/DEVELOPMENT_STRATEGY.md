@@ -35,3 +35,14 @@
 3. **Focus on functionality** for prototype
 4. **Use MUI components** consistently throughout
 5. **Collaborative-first design** - built for team workflows
+
+## Reference Materials
+The `/reference-v1/` folder contains components from a previous single-user discovery tool that serve as reference for patterns and concepts:
+
+- **AIService.ts** - AI prompt templates and mock response patterns
+- **AIChat.tsx** - Chat interface UX patterns  
+- **EditableSummary.tsx** - Inline editing component patterns
+- **DiscoveryContext.tsx** - State management approach
+- **Button.tsx** - Custom component patterns
+
+These files are **reference only** and not part of the active build. When implementing AI integration and collaborative features, we'll reference these patterns while building new MUI-based components from scratch.
