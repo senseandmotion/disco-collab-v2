@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -79,7 +79,7 @@ export const CreateOpportunityDialog: React.FC<CreateOpportunityDialogProps> = (
       setAiResponse('');
       setAiMessage('');
     }
-  }, [open]); // Remove initialData dependency to prevent infinite loops
+  }, [open]);
 
   const handleAiAssistance = async () => {
     if (!aiMessage.trim() || !session || !user) return;
@@ -163,6 +163,13 @@ export const CreateOpportunityDialog: React.FC<CreateOpportunityDialogProps> = (
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  // Check if form is valid without triggering state updates
+  const isFormValid = useMemo(() => {
+    return title.trim().length >= 5 && 
+           description.trim().length >= 20 && 
+           successVision.trim().length > 0;
+  }, [title, description, successVision]);
 
   const handleSave = async (submitStatus: 'draft' | 'submitted') => {
     if (!validateForm() || !session || !user) return;
@@ -415,7 +422,7 @@ export const CreateOpportunityDialog: React.FC<CreateOpportunityDialogProps> = (
         </Button>
         <Button
           onClick={() => handleSave('submitted')}
-          disabled={isSaving || !validateForm()}
+          disabled={isSaving || !isFormValid}
           variant="contained"
           startIcon={isSaving ? <CircularProgress size={20} /> : <SubmitIcon />}
         >
