@@ -32,6 +32,7 @@ export const JoinSession: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSessionCodeInput, setShowSessionCodeInput] = useState(false);
+  const [emailValidated, setEmailValidated] = useState(false);
   
   const sessionSlug = searchParams.get('session');
   const inviteToken = searchParams.get('invite');
@@ -81,12 +82,37 @@ export const JoinSession: React.FC = () => {
   const handleEmailChange = (value: string) => {
     setEmail(value);
     
-    // Check if returning user
-    if (value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      const existingUser = StorageService.getUserByEmail(value);
-      setIsReturningUser(!!existingUser);
+    // Reset validation state when email changes
+    if (emailValidated) {
+      setEmailValidated(false);
+      setIsReturningUser(false);
+    }
+  };
+
+  const validateEmail = (email: string, trigger: 'blur' | 'enter') => {
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      const existingUser = StorageService.getUserByEmail(email);
+      const isExistingUser = !!existingUser;
+      setIsReturningUser(isExistingUser);
+      setEmailValidated(true);
+      
+      // Auto-submit for returning users only when triggered by Enter (showing intent to proceed)
+      if (isExistingUser && trigger === 'enter') {
+        handleSubmit();
+      }
     } else {
       setIsReturningUser(false);
+      setEmailValidated(false);
+    }
+  };
+
+  const handleEmailBlur = () => {
+    validateEmail(email, 'blur');
+  };
+
+  const handleEmailKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      validateEmail(email, 'enter');
     }
   };
 
@@ -310,9 +336,11 @@ export const JoinSession: React.FC = () => {
                 type="email"
                 value={email}
                 onChange={(e) => handleEmailChange(e.target.value)}
+                onBlur={handleEmailBlur}
+                onKeyPress={handleEmailKeyPress}
                 placeholder="your.email@company.com"
                 error={!!errors.email}
-                helperText={errors.email || (isReturningUser ? 'Welcome back! We\'ll send you a magic link to sign in.' : 'Enter your work email address')}
+                helperText={errors.email || (emailValidated && isReturningUser ? 'Welcome back! Press Enter to log in automatically or click Continue.' : emailValidated && !isReturningUser ? 'New user - please fill in your details below.' : 'Enter your work email address and press Enter or click away to continue')}
                 fullWidth
                 required
                 InputProps={{
@@ -324,7 +352,7 @@ export const JoinSession: React.FC = () => {
                 }}
               />
 
-              {!isReturningUser && email && (
+              {emailValidated && !isReturningUser && (
                 <>
                   <TextField
                     label="Your Name"
@@ -365,12 +393,10 @@ export const JoinSession: React.FC = () => {
                 {isSubmitting ? (
                   <>
                     <CircularProgress size={24} sx={{ mr: 1 }} />
-                    Sending...
+                    Processing...
                   </>
-                ) : isReturningUser ? (
-                  'Join Session'
                 ) : (
-                  'Join Session'
+                  'Continue'
                 )}
               </Button>
             </Stack>
