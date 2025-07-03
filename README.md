@@ -1,54 +1,85 @@
-# React + TypeScript + Vite
+# Discovery Collaborative - AI-Powered Business Process Discovery
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React + TypeScript + Vite application for collaborative business process discovery sessions with AI assistance.
 
-Currently, two official plugins are available:
+## Project Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This application facilitates collaborative discovery sessions where teams can identify AI automation opportunities in their business processes. It features role-based access control, AI-powered guidance, and structured workflows through discovery, review, and prioritization phases.
 
-## Expanding the ESLint configuration
+## Current Status: Prototype/Development Mode
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+⚠️ **IMPORTANT: Authentication Workaround Active**
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+The application currently uses a simplified authentication system for development purposes:
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### What's Working:
+- Session creation automatically logs you in as the team lead
+- No email verification required during development
+- Direct access to session dashboard after creation
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### What's Temporarily Disabled:
+- Magic link email authentication flow
+- Full multi-user join process via email
+- Real email sending (Resend integration ready but bypassed)
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+### Production TODO:
+1. **Fix Authentication Flow**: 
+   - Resolve the stale user context issue causing "User not a participant" errors
+   - Implement proper user state synchronization between storage and React context
+   - Fix infinite re-render loops in SessionDashboard and CreateOpportunityDialog
+
+2. **Email Integration**:
+   - Move Resend API calls to backend server (currently blocked by CORS in frontend)
+   - Implement proper server-side magic link generation and verification
+   - Add proper session invitation flow with email notifications
+
+3. **Multi-user Testing**:
+   - Test complete join session flow with multiple users
+   - Verify role-based permissions and phase transitions
+   - Test collaboration features with real user sessions
+
+## Architecture
+
+- **Frontend**: React 18 + TypeScript + Material-UI + Vite
+- **State Management**: React Context API
+- **Data Persistence**: LocalStorage (prototype) - ready for backend integration
+- **AI Integration**: Claude API (Anthropic)
+- **Email Service**: Resend (configured but needs backend implementation)
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Copy `.env.example` to `.env` and configure:
+   ```
+   VITE_CLAUDE_API_KEY=your_claude_api_key_here
+   VITE_RESEND_API_KEY=your_resend_api_key_here
+   ```
+4. Start development server: `npm run dev`
+5. Create a session - you'll be automatically logged in as team lead
+
+## Key Features
+
+- **Session Management**: Create and manage discovery sessions with unique URLs
+- **AI Assistant**: Claude-powered guidance for opportunity identification and analysis
+- **Role-Based Access**: Team Lead, Decider, and Contributor roles with different permissions
+- **Three-Phase Workflow**: Discovery → Review → Prioritization
+- **Collaborative Tools**: Comments, reactions, and real-time collaboration simulation
+- **Export Capabilities**: PDF generation for session reports (react-pdf integration ready)
+
+## Development Notes
+
+- All user data is stored in localStorage for prototype purposes
+- Session URLs use human-readable slugs with collision detection
+- AI responses include fallback to mock data when API is unavailable
+- Data models are designed for easy backend integration
+
+## Tech Stack
+
+- React 18 + TypeScript
+- Material-UI (MUI) for components
+- Vite for build tooling
+- React Router for navigation
+- UUID for unique identifiers
+- react-pdf for report generation
+- Resend for email services
