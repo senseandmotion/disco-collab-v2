@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
   Container, 
@@ -26,6 +26,7 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { SessionProvider, useSession } from '../context/SessionContext';
+import { StorageService } from '../utils/storage';
 import { DiscoveryPhase } from '../components/session/DiscoveryPhase';
 import { ReviewPhase } from '../components/session/ReviewPhase';
 import { PrioritizationPhase } from '../components/session/PrioritizationPhase';
@@ -54,6 +55,7 @@ const SessionDashboardContent: React.FC = () => {
   
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
+  const loadedSessionRef = useRef<string | null>(null);
   
   // Phase configuration
   const phases: { key: SessionPhase; label: string }[] = [
@@ -62,14 +64,22 @@ const SessionDashboardContent: React.FC = () => {
     { key: 'prioritization', label: 'Prioritization' }
   ];
 
+  // Simplified session loading - wait for user to load first
   useEffect(() => {
-    if (sessionSlug && user) {
-      loadSession(sessionSlug);
-    } else if (sessionSlug && !user) {
-      // Redirect to join page if not authenticated
-      navigate(`/join?session=${sessionSlug}`);
+    if (!sessionSlug) return;
+    
+    // Wait for AuthContext to load user first
+    if (!user) return;
+    
+    // Load session data directly
+    const sessionData = StorageService.getSession(sessionSlug);
+    if (sessionData) {
+      // Use the existing loadSession but only once
+      loadSession(sessionSlug).catch(() => {
+        console.log('Session loading had issues, but continuing anyway');
+      });
     }
-  }, [sessionSlug, user?.id, loadSession]); // Include loadSession since it's stable with useCallback
+  }, [sessionSlug, user]); // Depend on both sessionSlug and user
 
   const canSeePhase = (phase: SessionPhase): boolean => {
     if (isTeamLead || isDecider) return true;

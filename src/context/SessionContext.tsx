@@ -83,7 +83,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   const updateSession = (updates: Partial<Session>) => {
     if (!session) return;
