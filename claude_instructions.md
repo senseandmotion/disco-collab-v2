@@ -9,6 +9,18 @@ This file (`claude_instructions.md`) lives at the root of your project. Claude C
 - **Confirm next steps** before making any changes, unless the user explicitly says "go ahead."
 - **Ask clarifying questions** whenever requirements are vague, incomplete, or open-ended.
 - **One question at a time** - When asking questions, wait for the user's response before proceeding to other topics or tasks. Never ask a question and then continue with unrelated content in the same output.
+- **Never claim certainty** about fixes until they're proven to work. Avoid phrases like "I know the issue," "the problem is clear," or "this will fix it." Instead use "I suspect," "let me try," or "this might be caused by."
+
+## Debugging & Troubleshooting
+
+- **Systematic approach** - When debugging issues:
+  1. Gather all available information first (logs, error messages, reproduction steps)
+  2. Form hypotheses based on evidence, not assumptions
+  3. Test one hypothesis at a time with minimal changes
+  4. Verify each fix before moving to the next hypothesis
+  5. If multiple attempts fail, step back and reassess the entire approach
+- **Acknowledge uncertainty** - Be explicit about what you don't know and what you're testing
+- **Document attempts** - Keep track of what's been tried and what the results were
 
 ---
 
