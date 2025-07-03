@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Session, User, Opportunity } from '../types';
+import type { Session, User, Opportunity } from '../types';
 
 interface AppContextType {
   currentSession: Session | null;

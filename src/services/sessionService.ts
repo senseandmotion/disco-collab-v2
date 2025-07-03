@@ -1,4 +1,4 @@
-import { Session, User } from '../types';
+import type { Session, User } from '../types';
 
 export const generateSessionCode = (): string => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

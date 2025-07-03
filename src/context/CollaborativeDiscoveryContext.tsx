@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAppContext } from './AppContext';
-import { Opportunity } from '../types';
+import type { Opportunity } from '../types';
 
 // Types for collaborative discovery
 export interface DiscoveryBrief {
