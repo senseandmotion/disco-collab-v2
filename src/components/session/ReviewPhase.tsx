@@ -11,22 +11,46 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemText,
+  IconButton,
+  Collapse,
+  Badge
 } from '@mui/material';
 import { 
   SmartToy as AIIcon,
   Assignment as AssignIcon,
   CheckCircle as ApproveIcon,
-  Info as InfoIcon
+  Info as InfoIcon,
+  ExpandMore as ExpandIcon,
+  ExpandLess as CollapseIcon,
+  Merge as MergeIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
 import { useSession } from '../../context/SessionContext';
 import { OpportunityDetailModal } from '../opportunity/OpportunityDetailModal';
-import type { Opportunity } from '../../types';
+import { CategoryManagementDialog } from './CategoryManagementDialog';
+import { DeciderAssignmentDialog } from './DeciderAssignmentDialog';
+import { StorageService } from '../../utils/storage';
+import ClaudeAPIService from '../../services/ClaudeAPIService';
+import type { Opportunity, OpportunityCategory } from '../../types';
+import type { CategoryAnalysis } from '../../services/ClaudeAPIService';
 
 export const ReviewPhase: React.FC = () => {
-  const { opportunities, isTeamLead, isDecider } = useSession();
+  const { session, opportunities, participants, isTeamLead, isDecider } = useSession();
   const [contributorDialogOpen, setContributorDialogOpen] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
+  const [categories, setCategories] = useState<OpportunityCategory[]>([]);
+  const [mergeRecommendations, setMergeRecommendations] = useState<CategoryAnalysis['mergeRecommendations']>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<OpportunityCategory | null>(null);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [deciderDialogOpen, setDeciderDialogOpen] = useState(false);
 
   // Show dialog for contributors when they first enter review phase
   useEffect(() => {
@@ -34,6 +58,91 @@ export const ReviewPhase: React.FC = () => {
       setContributorDialogOpen(true);
     }
   }, [isTeamLead, isDecider]);
+
+  // Load categories from storage
+  useEffect(() => {
+    if (session && isTeamLead) {
+      const storedCategories = StorageService.getCategories(session.id);
+      if (storedCategories.length > 0) {
+        setCategories(storedCategories);
+        setHasAnalyzed(true);
+      }
+    }
+  }, [session, isTeamLead]);
+
+  const handleGenerateCategories = async () => {
+    if (!session) return;
+    
+    setIsAnalyzing(true);
+    try {
+      const submittedOpportunities = opportunities.filter(opp => 
+        opp.status === 'submitted' || opp.status === 'approved'
+      );
+      
+      const analysis = await ClaudeAPIService.analyzeOpportunitiesForClustering(submittedOpportunities);
+      
+      setCategories(analysis.categories);
+      setMergeRecommendations(analysis.mergeRecommendations);
+      setHasAnalyzed(true);
+      
+      // Save categories to storage
+      StorageService.saveCategories(session.id, analysis.categories);
+      
+      // Expand all categories by default
+      setExpandedCategories(new Set(analysis.categories.map(cat => cat.id)));
+    } catch (error) {
+      console.error('Error generating categories:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+
+  const getOpportunityById = (id: string): Opportunity | undefined => {
+    return opportunities.find(opp => opp.id === id);
+  };
+
+  const handleEditCategory = (category: OpportunityCategory) => {
+    setSelectedCategory(category);
+    setCategoryDialogOpen(true);
+  };
+
+  const handleSaveCategory = (updatedCategory: OpportunityCategory) => {
+    setCategories(prev => prev.map(cat => 
+      cat.id === updatedCategory.id ? updatedCategory : cat
+    ));
+  };
+
+  const handleAssignDecider = (category: OpportunityCategory) => {
+    setSelectedCategory(category);
+    setDeciderDialogOpen(true);
+  };
+
+  const handleDeciderAssigned = (deciderId: string) => {
+    if (!selectedCategory || !session) return;
+    
+    const updatedCategory = {
+      ...selectedCategory,
+      assignedDeciderId: deciderId,
+      approvalStatus: 'pending' as const
+    };
+    
+    StorageService.updateCategory(session.id, selectedCategory.id, updatedCategory);
+    setCategories(prev => prev.map(cat => 
+      cat.id === selectedCategory.id ? updatedCategory : cat
+    ));
+  };
 
   // Contributor view - read-only opportunities
   if (!isTeamLead && !isDecider) {
@@ -175,13 +284,11 @@ export const ReviewPhase: React.FC = () => {
         {isTeamLead && (
           <Button
             variant="outlined"
-            startIcon={<AIIcon />}
-            onClick={() => {
-              // TODO: Trigger AI analysis
-              console.log('Generate AI categories');
-            }}
+            startIcon={isAnalyzing ? <CircularProgress size={20} /> : <AIIcon />}
+            onClick={handleGenerateCategories}
+            disabled={isAnalyzing || opportunities.filter(o => o.status === 'submitted').length === 0}
           >
-            Generate AI Categories
+            {isAnalyzing ? 'Analyzing...' : hasAnalyzed ? 'Regenerate Categories' : 'Generate AI Categories'}
           </Button>
         )}
       </Stack>
@@ -196,13 +303,13 @@ export const ReviewPhase: React.FC = () => {
         </Card>
         <Card variant="outlined">
           <CardContent sx={{ p: 2 }}>
-            <Typography variant="h6">0</Typography>
+            <Typography variant="h6">{categories.length}</Typography>
             <Typography variant="body2" color="text.secondary">Categories</Typography>
           </CardContent>
         </Card>
         <Card variant="outlined">
           <CardContent sx={{ p: 2 }}>
-            <Typography variant="h6">0</Typography>
+            <Typography variant="h6">{categories.filter(cat => cat.assignedDeciderId).length}</Typography>
             <Typography variant="body2" color="text.secondary">Assigned Deciders</Typography>
           </CardContent>
         </Card>
@@ -213,20 +320,135 @@ export const ReviewPhase: React.FC = () => {
         <CardContent>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             <Typography variant="h6">AI-Generated Categories</Typography>
-            <Chip label="Not Generated" color="default" size="small" />
+            <Chip 
+              label={hasAnalyzed ? `${categories.length} Categories` : "Not Generated"} 
+              color={hasAnalyzed ? "success" : "default"} 
+              size="small" 
+            />
           </Stack>
           
-          <Alert severity="info" sx={{ mb: 2 }}>
-            <Typography variant="body2">
-              AI will analyze all submitted opportunities and suggest logical groupings and potential mergers.
-              This helps organize similar ideas and reduce duplication.
-            </Typography>
-          </Alert>
-          
-          {/* Placeholder for categories */}
-          <Typography variant="body2" color="text.secondary">
-            Run AI analysis to generate opportunity categories and merge suggestions.
-          </Typography>
+          {!hasAnalyzed ? (
+            <>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2">
+                  AI will analyze all submitted opportunities and suggest logical groupings and potential mergers.
+                  This helps organize similar ideas and reduce duplication.
+                </Typography>
+              </Alert>
+              <Typography variant="body2" color="text.secondary">
+                Click "Generate AI Categories" to start the analysis.
+              </Typography>
+            </>
+          ) : (
+            <Stack spacing={2}>
+              {/* Merge Recommendations */}
+              {mergeRecommendations.length > 0 && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Potential Duplicates Found
+                  </Typography>
+                  <Typography variant="body2">
+                    AI identified {mergeRecommendations.length} sets of opportunities that may be duplicates.
+                  </Typography>
+                </Alert>
+              )}
+
+              {/* Categories */}
+              {categories.map((category) => (
+                <Card key={category.id} variant="outlined">
+                  <CardContent sx={{ p: 2 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                          <IconButton 
+                            size="small" 
+                            onClick={() => toggleCategory(category.id)}
+                          >
+                            {expandedCategories.has(category.id) ? <CollapseIcon /> : <ExpandIcon />}
+                          </IconButton>
+                          <Typography variant="subtitle1">{category.name}</Typography>
+                          <Badge badgeContent={category.opportunityIds.length} color="primary" />
+                          <Chip 
+                            label={`${category.aiConfidence} confidence`} 
+                            size="small" 
+                            color={
+                              category.aiConfidence === 'high' ? 'success' : 
+                              category.aiConfidence === 'medium' ? 'warning' : 'default'
+                            }
+                          />
+                          {category.assignedDeciderId && (
+                            <Chip 
+                              label={`Assigned: ${participants.find(p => p.id === category.assignedDeciderId)?.name || 'Unknown'}`}
+                              size="small"
+                              color="primary"
+                              variant="outlined"
+                              icon={<PersonIcon />}
+                            />
+                          )}
+                        </Stack>
+                        
+                        <Typography variant="body2" color="text.secondary" sx={{ ml: 5 }}>
+                          {category.description}
+                        </Typography>
+                        
+                        {expandedCategories.has(category.id) && (
+                          <Box sx={{ mt: 2, ml: 5 }}>
+                            <Typography variant="caption" color="text.secondary" gutterBottom>
+                              AI Reasoning: {category.aiReasoning}
+                            </Typography>
+                            
+                            <List dense sx={{ mt: 1 }}>
+                              {category.opportunityIds.map(oppId => {
+                                const opp = getOpportunityById(oppId);
+                                if (!opp) return null;
+                                
+                                return (
+                                  <ListItem 
+                                    key={oppId}
+                                    secondaryAction={
+                                      <Button 
+                                        size="small" 
+                                        onClick={() => setSelectedOpportunity(opp)}
+                                      >
+                                        View
+                                      </Button>
+                                    }
+                                  >
+                                    <ListItemText 
+                                      primary={opp.title}
+                                      secondary={`${opp.description.substring(0, 100)}...`}
+                                    />
+                                  </ListItem>
+                                );
+                              })}
+                            </List>
+                          </Box>
+                        )}
+                      </Box>
+                      
+                      <Stack direction="row" spacing={1}>
+                        <IconButton 
+                          size="small"
+                          onClick={() => handleEditCategory(category)}
+                          title="Edit category"
+                        >
+                          <EditIcon />
+                        </IconButton>
+                        <Button 
+                          size="small" 
+                          startIcon={<AssignIcon />}
+                          variant={category.assignedDeciderId ? "outlined" : "contained"}
+                          onClick={() => handleAssignDecider(category)}
+                        >
+                          {category.assignedDeciderId ? 'Reassign' : 'Assign Decider'}
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          )}
         </CardContent>
       </Card>
 
@@ -293,6 +515,37 @@ export const ReviewPhase: React.FC = () => {
           {/* Progress indicators will go here */}
         </CardContent>
       </Card>
+
+      {/* Opportunity Detail Modal */}
+      <OpportunityDetailModal
+        opportunity={selectedOpportunity}
+        open={!!selectedOpportunity}
+        onClose={() => setSelectedOpportunity(null)}
+        readOnly={false}
+      />
+
+      {/* Category Management Dialog */}
+      <CategoryManagementDialog
+        open={categoryDialogOpen}
+        onClose={() => {
+          setCategoryDialogOpen(false);
+          setSelectedCategory(null);
+        }}
+        category={selectedCategory}
+        onSave={handleSaveCategory}
+        opportunities={opportunities}
+      />
+
+      {/* Decider Assignment Dialog */}
+      <DeciderAssignmentDialog
+        open={deciderDialogOpen}
+        onClose={() => {
+          setDeciderDialogOpen(false);
+          setSelectedCategory(null);
+        }}
+        category={selectedCategory || undefined}
+        onAssign={handleDeciderAssigned}
+      />
     </Box>
   );
 };
