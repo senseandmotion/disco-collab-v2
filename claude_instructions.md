@@ -53,6 +53,7 @@ This file (`claude_instructions.md`) lives at the root of your project. Claude C
 
 - **Stage and commit** at natural breakpoints with clear, descriptive messages.
 - **Keep commit messages clean** - Do not add Claude Code signatures or co-author tags.
+- **Always pull before pushing** to avoid merge conflicts and ensure you have the latest changes.
 
 ---
 
