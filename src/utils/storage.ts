@@ -1,4 +1,4 @@
-import type { Session, User, Opportunity, Comment, ChatMessage, MagicLink } from '../types';
+import type { Session, User, Opportunity, Comment, ChatMessage, MagicLink, OpportunityCategory } from '../types';
 
 const STORAGE_PREFIX = 'discovery-v2-';
 
@@ -179,5 +179,29 @@ export class StorageService {
       return linkExpiry > now && !link.used;
     });
     storage.set('magic-links', validLinks);
+  }
+
+  // Category storage
+  static saveCategories(sessionId: string, categories: OpportunityCategory[]): void {
+    storage.set(`categories-${sessionId}`, categories);
+  }
+
+  static getCategories(sessionId: string): OpportunityCategory[] {
+    return storage.get<OpportunityCategory[]>(`categories-${sessionId}`) || [];
+  }
+
+  static updateCategory(sessionId: string, categoryId: string, updates: Partial<OpportunityCategory>): void {
+    const categories = this.getCategories(sessionId);
+    const index = categories.findIndex(cat => cat.id === categoryId);
+    if (index !== -1) {
+      categories[index] = { ...categories[index], ...updates };
+      this.saveCategories(sessionId, categories);
+    }
+  }
+
+  static deleteCategory(sessionId: string, categoryId: string): void {
+    const categories = this.getCategories(sessionId);
+    const filtered = categories.filter(cat => cat.id !== categoryId);
+    this.saveCategories(sessionId, filtered);
   }
 }

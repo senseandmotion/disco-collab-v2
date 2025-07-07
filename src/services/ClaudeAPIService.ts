@@ -266,6 +266,101 @@ MERGERS:
     };
   }
 
+  async analyzeOpportunitiesForClustering(opportunities: Opportunity[]): Promise<CategoryAnalysis> {
+    // For mock implementation, we'll use intelligent grouping based on content analysis
+    await this.simulateAPIDelay();
+    
+    if (opportunities.length === 0) {
+      return { categories: [], mergeRecommendations: [] };
+    }
+    
+    // Analyze opportunities for common themes
+    const categories: OpportunityCategory[] = [];
+    const categorized = new Set<string>();
+    
+    // Define theme keywords for intelligent grouping
+    const themes = {
+      'Process Automation': ['automate', 'workflow', 'process', 'efficiency', 'manual', 'streamline', 'bottleneck'],
+      'Customer Experience': ['customer', 'client', 'satisfaction', 'experience', 'support', 'service', 'feedback', 'user'],
+      'Data & Analytics': ['data', 'analytics', 'report', 'dashboard', 'metrics', 'insight', 'visualization', 'kpi'],
+      'Financial Operations': ['finance', 'accounting', 'invoice', 'payment', 'budget', 'cost', 'expense', 'revenue'],
+      'Team Collaboration': ['team', 'collaboration', 'communication', 'meeting', 'coordination', 'sharing', 'employee'],
+      'Technology Infrastructure': ['system', 'integration', 'software', 'platform', 'technology', 'api', 'database', 'infrastructure']
+    };
+    
+    // Group opportunities by theme
+    for (const [themeName, keywords] of Object.entries(themes)) {
+      const themeOpportunities = opportunities.filter(opp => {
+        if (categorized.has(opp.id)) return false;
+        
+        const text = `${opp.title} ${opp.description} ${opp.successVision}`.toLowerCase();
+        const matchCount = keywords.filter(keyword => text.includes(keyword)).length;
+        return matchCount >= 2; // Requires at least 2 keyword matches
+      });
+      
+      if (themeOpportunities.length > 0) {
+        const category: OpportunityCategory = {
+          id: `cat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: themeName,
+          description: `Opportunities related to ${themeName.toLowerCase()} improvements and initiatives`,
+          opportunityIds: themeOpportunities.map(opp => opp.id),
+          aiConfidence: themeOpportunities.length >= 3 ? 'high' : themeOpportunities.length >= 2 ? 'medium' : 'low',
+          aiReasoning: `Identified ${themeOpportunities.length} opportunities with strong thematic alignment around ${themeName.toLowerCase()} concepts`,
+          approvalStatus: 'pending'
+        };
+        
+        categories.push(category);
+        themeOpportunities.forEach(opp => categorized.add(opp.id));
+      }
+    }
+    
+    // Create an "Other" category for uncategorized opportunities
+    const uncategorized = opportunities.filter(opp => !categorized.has(opp.id));
+    if (uncategorized.length > 0) {
+      categories.push({
+        id: `cat-other-${Date.now()}`,
+        name: 'Other Opportunities',
+        description: 'Opportunities that don\'t fit into the main thematic categories',
+        opportunityIds: uncategorized.map(opp => opp.id),
+        aiConfidence: 'low',
+        aiReasoning: 'These opportunities appear to be unique or cross-functional in nature',
+        approvalStatus: 'pending'
+      });
+    }
+    
+    // Identify merge recommendations (opportunities that are very similar)
+    const mergeRecommendations: CategoryAnalysis['mergeRecommendations'] = [];
+    
+    for (let i = 0; i < opportunities.length; i++) {
+      for (let j = i + 1; j < opportunities.length; j++) {
+        const opp1 = opportunities[i];
+        const opp2 = opportunities[j];
+        
+        // Simple similarity check based on title and description overlap
+        const words1 = new Set(`${opp1.title} ${opp1.description}`.toLowerCase().split(/\s+/));
+        const words2 = new Set(`${opp2.title} ${opp2.description}`.toLowerCase().split(/\s+/));
+        
+        const intersection = new Set([...words1].filter(x => words2.has(x)));
+        const union = new Set([...words1, ...words2]);
+        
+        const similarity = intersection.size / union.size;
+        
+        if (similarity > 0.5) { // More than 50% word overlap
+          mergeRecommendations.push({
+            opportunityIds: [opp1.id, opp2.id],
+            reasoning: `These opportunities share ${Math.round(similarity * 100)}% content similarity and may represent the same underlying need`,
+            confidence: similarity > 0.7 ? 'high' : similarity > 0.6 ? 'medium' : 'low'
+          });
+        }
+      }
+    }
+    
+    return {
+      categories,
+      mergeRecommendations
+    };
+  }
+
   // Helper methods
   private extractFollowUpQuestions(content: string): string[] {
     const questions = content.match(/\?[^?]*\?/g) || [];
