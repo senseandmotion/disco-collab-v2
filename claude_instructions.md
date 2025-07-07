@@ -10,6 +10,7 @@ This file (`claude_instructions.md`) lives at the root of your project. Claude C
 - **Ask clarifying questions** whenever requirements are vague, incomplete, or open-ended.
 - **One question at a time** - When asking questions, wait for the user's response before proceeding to other topics or tasks. Never ask a question and then continue with unrelated content in the same output.
 - **Never claim certainty** about fixes until they're proven to work. Avoid phrases like "I know the issue," "the problem is clear," or "this will fix it." Instead use "I suspect," "let me try," or "this might be caused by."
+- **Collaboration context** - The user is making design decisions and learning about code implementation. Always confirm approach before implementing to support their learning process and ensure alignment on both UX and technical decisions.
 
 ## Debugging & Troubleshooting
 

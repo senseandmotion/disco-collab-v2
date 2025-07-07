@@ -39,12 +39,14 @@ interface OpportunityDetailModalProps {
   opportunity: Opportunity | null;
   open: boolean;
   onClose: () => void;
+  readOnly?: boolean;
 }
 
 export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
   opportunity,
   open,
-  onClose
+  onClose,
+  readOnly = false
 }) => {
   const { session, participants, refreshOpportunities } = useSession();
   const { user } = useAuth();
@@ -86,6 +88,7 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
   };
 
   const canEdit = () => {
+    if (readOnly) return false;
     return user && opportunity && (
       user.id === opportunity.submittedById || 
       user.id === session?.teamLeadId
@@ -379,18 +382,20 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
                             <Button
                               size="small"
                               startIcon={<ThumbUpIcon />}
-                              onClick={() => handleReaction(comment.id, 'thumbsUp')}
+                              onClick={() => !readOnly && handleReaction(comment.id, 'thumbsUp')}
                               color={getUserReaction(comment) === 'thumbsUp' ? 'primary' : 'inherit'}
                               sx={{ minWidth: 'auto', p: 0.5 }}
+                              disabled={readOnly}
                             >
                               {comment.reactions.thumbsUp.length}
                             </Button>
                             <Button
                               size="small"
                               startIcon={<ThumbDownIcon />}
-                              onClick={() => handleReaction(comment.id, 'thumbsDown')}
+                              onClick={() => !readOnly && handleReaction(comment.id, 'thumbsDown')}
                               color={getUserReaction(comment) === 'thumbsDown' ? 'error' : 'inherit'}
                               sx={{ minWidth: 'auto', p: 0.5 }}
+                              disabled={readOnly}
                             >
                               {comment.reactions.thumbsDown.length}
                             </Button>
@@ -402,7 +407,7 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
                 ))}
 
                 {/* Add Comment */}
-                {user && (
+                {user && !readOnly && (
                   <Card variant="outlined">
                     <CardContent sx={{ p: 2 }}>
                       <Stack spacing={2}>
@@ -428,6 +433,12 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
                       </Stack>
                     </CardContent>
                   </Card>
+                )}
+                
+                {readOnly && (
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    Session is in Review phase. Opportunities are view-only until prioritization begins.
+                  </Alert>
                 )}
               </Stack>
             </Collapse>

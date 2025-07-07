@@ -295,14 +295,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onOpportunityExtra
         <div ref={messagesEndRef} />
       </Box>
 
-      {/* API Status */}
-      {!claudeService.isAPIAvailable() && (
-        <Alert severity="warning" sx={{ mx: 2, mb: 1 }}>
-          <Typography variant="caption">
-            Claude API not configured. Using mock responses for demonstration.
-          </Typography>
-        </Alert>
-      )}
 
       {/* Input Area */}
       <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>

@@ -13,6 +13,9 @@ import { CreateSession } from './pages/CreateSession';
 import { MagicLinkVerify } from './pages/MagicLinkVerify';
 import { JoinSession } from './pages/JoinSession';
 import { SessionDashboard } from './pages/SessionDashboard';
+import { AdminPanel } from './pages/AdminPanel';
+import { SessionProvider } from './context/SessionContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 function App() {
   return (
@@ -30,6 +33,13 @@ function App() {
                   <Route path="create-session" element={<CreateSession />} />
                   <Route path="join" element={<JoinSession />} />
                   <Route path="session/:sessionSlug" element={<SessionDashboard />} />
+                  <Route path="session/:sessionSlug/admin" element={
+                    <ErrorBoundary>
+                      <SessionProvider>
+                        <AdminPanel />
+                      </SessionProvider>
+                    </ErrorBoundary>
+                  } />
                 </Route>
               </Routes>
             </Router>
